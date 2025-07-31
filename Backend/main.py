@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from models import TickInfo
+from models import TickInfo, SymbolInfo
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from typing import Dict
@@ -11,8 +11,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
+
+
 app = FastAPI()
 tickdata: list[TickInfo] = []
+symboldata: list[SymbolInfo] = []
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -37,5 +40,21 @@ async def TickData(data:list[TickInfo]):
 async def GetTick():
     return tickdata
 
+
+#create enddpoint to get symbol info
+@app.post("/symbol")
+async def SymbolData(data:list[SymbolInfo]):
+    global symboldata
+    symboldata = data 
+    for sym in symboldata:
+        print(f"Receive symbol {sym.symbol} with info")
+    return {"message":f"{len(data)} ticks recieved successfully"}
+
+@app.get("/symbol/data")
+async def GetSym():
+    return symboldata
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True)
+
+
