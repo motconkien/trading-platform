@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 
 #validate data for receive 
 class TickInfo(BaseModel):
-    account: str
-    symbol: str
+    # account: str
+    # symbol: str
     bid: float
     ask: float
     spread: int
@@ -11,6 +11,8 @@ class TickInfo(BaseModel):
     swap_short:float
     date:str
    
+class TickResponse(BaseModel):
+    message:str
 
 class SymbolInfo(BaseModel):
     account:str
@@ -18,4 +20,6 @@ class SymbolInfo(BaseModel):
     contractsize:int
     stop_level:float
     digits:int
-    
+
+class SymbolResponse(BaseModel):
+    message:str

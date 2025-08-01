@@ -1,10 +1,9 @@
 from fastapi import FastAPI, Request
-from schemas import TickInfo, SymbolInfo
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from typing import Dict
-import models
-import handle_db
+import models.sqlalchemy.models as models
+import utils.handle_db as handle_db
 import uvicorn
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -12,13 +11,20 @@ from fastapi import Request
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-
+from routers import prices, symbols
+import shutil
+import os 
 
 
 app = FastAPI()
-tickdata: list[TickInfo] = []
-symboldata: list[SymbolInfo] = []
+app.include_router(prices.router)
+app.include_router(symbols.router)
 
+def remove_pycache(start_dir="."):
+    for root, dirs, files in os.walk(start_dir):
+        for d in dirs:
+            if d == '__pycache__':
+                shutil.rmtree(os.path.join(root, d))
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -28,36 +34,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors()},
     )
 
-#create endpoint to get tick from mt5 terminal 
-@app.post("/price")
-async def TickData(data:list[TickInfo]):
-    global tickdata
-    tickdata = data
-    for tick in data: 
-        print(f"Recieved {tick.symbol} with {tick.bid}")
-    print("Update database processing")
-    handle_db.update_all_tick(tickdata)
-    return {"message":f"{len(data)} ticks recieved successfully"}
-
-#endpoint to get tick from api for frontend
-@app.get("/price/data")
-async def GetTick():
-    return tickdata
-
-
-#create enddpoint to get symbol info
-@app.post("/symbol")
-async def SymbolData(data:list[SymbolInfo]):
-    global symboldata
-    symboldata = data 
-    for sym in symboldata:
-        print(f"Receive symbol {sym.symbol} with info")
-    handle_db.update_all_symbol(symboldata)
-    return {"message":f"{len(data)} ticks recieved successfully"}
-
-@app.get("/symbol/data")
-async def GetSym():
-    return symboldata
+remove_pycache()
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True)
