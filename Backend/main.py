@@ -20,6 +20,13 @@ app = FastAPI()
 app.include_router(prices.router)
 app.include_router(symbols.router)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 def remove_pycache(start_dir="."):
     for root, dirs, files in os.walk(start_dir):
         for d in dirs:
