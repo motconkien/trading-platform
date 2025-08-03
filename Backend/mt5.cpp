@@ -11,9 +11,10 @@
 string price_url = "http://127.0.0.1:8001/price";
 string symbol_url = "http://127.0.0.1:8001/symbol";
 
-void sendingBatchData(string url,string data){
-   Print("Sending data to FASTAPI: ", data);
+void sendingBatchData(string url,string acc,string data){
    
+   string combine = "{\""+acc+ "\":"+data+"}";
+   Print("Sending data to FASTAPI: ", combine);
    string headers = "Content-Type: application/json\r\n";
    
    char result[];
@@ -21,7 +22,7 @@ void sendingBatchData(string url,string data){
    string response;
    
    //StringToCharArray(data, postData);
-   ArrayResize(postData, StringToCharArray(data, postData, 0, WHOLE_ARRAY, CP_UTF8)-1);
+   ArrayResize(postData, StringToCharArray(combine, postData, 0, WHOLE_ARRAY, CP_UTF8)-1);
    
    //sending process
    int res = WebRequest("POST",url,headers,0,postData,result,response);
@@ -31,7 +32,7 @@ void sendingBatchData(string url,string data){
    else Print("Error: ",res);
 }
 
-string MakeTickJSON(string account,
+string MakeTickJSON(
                      string symbol, 
                      double bid, 
                      double ask, 
@@ -40,8 +41,8 @@ string MakeTickJSON(string account,
                      double swap_short, 
                      string date) {
    string json = StringFormat(
-            "{\"account\":\"%s\",\"symbol\":\"%s\", \"bid\":%.5f, \"ask\":%.5f, \"spread\":%d,\"swap_long\":%.5f, \"swap_short\":%.5f, \"date\":\"%s\"}", 
-              account, symbol, bid, ask, spread, swap_long, swap_short, date);
+            "\"%s\":{\"bid\":%.5f, \"ask\":%.5f, \"spread\":%d,\"swap_long\":%.5f, \"swap_short\":%.5f, \"date\":\"%s\"}", 
+              symbol, bid, ask, spread, swap_long, swap_short, date);
    return json;
 }
 void PriceDataJson() {
@@ -49,9 +50,9 @@ void PriceDataJson() {
    Print("Starting batched JSON creation...");
 
    int total = SymbolsTotal(true);
-   int batch_size = 10;
+   int batch_size = 30;
    string acc = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
-   string jsonData = "[";
+   string jsonData = "{";
 
    for (int i = 0; i < total; i++) {
       string sym = SymbolName(i, true);
@@ -64,7 +65,7 @@ void PriceDataJson() {
       double swap_short = SymbolInfoDouble(sym, SYMBOL_SWAP_SHORT);
       string date = TimeToString(TimeCurrent(), TIME_DATE | TIME_MINUTES | TIME_SECONDS);
 
-      jsonData += MakeTickJSON(acc, sym, bid, ask, spread, swap_long, swap_short, date);
+      jsonData += MakeTickJSON(sym, bid, ask, spread, swap_long, swap_short, date);
 
       if ((i + 1) % batch_size != 0 && i != total - 1) {
          jsonData += ",";
@@ -72,12 +73,12 @@ void PriceDataJson() {
 
 
       if ((i + 1) % batch_size == 0 || i == total - 1) {
-         jsonData += "]";  
+         jsonData += "}";  
 
          Print("Sending batch ", i + 1 - batch_size + 1, " to ", i + 1);
-         sendingBatchData(price_url,jsonData);
+         sendingBatchData(price_url,acc,jsonData);
 
-         jsonData = "[";
+         jsonData = "{";
          Sleep(5);  
       }
    }
@@ -85,37 +86,15 @@ void PriceDataJson() {
 //+------------------------------------------------------------------+
 //| Symbolinfo                                                       |
 //+------------------------------------------------------------------+
-struct SymbolInfo {
-   int digits;
-   int stop_level;
-   double contract_size;
-};
-
-string symbols[];
-SymbolInfo infos[];
-
-int findIndex(string sym) {
-   int size = ArraySize(symbols);
-   for(int i = 0; i < size; i++) {
-      if(symbols[i] == sym) return i;
-   }
-   return -1;
-}
-
 string MakeSymbolJSON(string acc,string sym, int digits, int stop_level, double contract_size) {
    return StringFormat(
       "{\"account\":\"%s\",\"symbol\":\"%s\", \"digits\":%d, \"stop_level\":%d, \"contractsize\":%.5f}",
       acc,sym, digits, stop_level, contract_size);
 }
 
-bool IsSameInfo(SymbolInfo &a, SymbolInfo &b) {
-   return a.digits == b.digits
-       && a.stop_level == b.stop_level
-       && MathAbs(a.contract_size - b.contract_size) < 0.00001;
-}
 
 void SymbolJson() {
-   int batch_size = 10;
+   int batch_size = 100;
    int total = SymbolsTotal(true);
    string acc = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
    string jsonData = "[";
@@ -137,7 +116,7 @@ void SymbolJson() {
          jsonData += "]";  
 
          Print("Sending batch ", i + 1 - batch_size + 1, " to ", i + 1);
-         sendingBatchData(symbol_url, jsonData);
+         sendingBatchData(symbol_url, acc,jsonData);
 
          jsonData = "[";
          Sleep(5);  
@@ -155,8 +134,8 @@ int OnInit()
    EventSetTimer(5);
 //TestStaticRequest();
    Print("Function is calling...");
-   //PriceDataJson();
-   SymbolJson();
+   PriceDataJson();
+   //SymbolJson();
 //PositionData();
 
 //---
@@ -177,9 +156,9 @@ void OnDeinit(const int reason)
 void OnTick()
   {
 //---
-Print("Function is calling...");
-   //PriceDataJson();
-   SymbolJson();
+   Print("Function is calling...");
+   PriceDataJson();
+   //SymbolJson();
 //TestStaticRequest();
 
   }
@@ -190,8 +169,8 @@ void OnTimer()
   {
 //---
 Print("Function is calling...");
-  //PriceDataJson();
-  SymbolJson();
+  PriceDataJson();
+  //SymbolJson();
 //PositionData();
 //TestStaticRequest();
   }
