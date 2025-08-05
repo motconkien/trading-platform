@@ -45,21 +45,21 @@ def update_all_symbol(symbol_data):
     session = next(databases.get_db())
     for sym in symbol_data:
         existing = session.query(SymbolInfoDB).filter( #type:ignore
-            SymbolInfoDB.symbol == sym.symbol,
-            SymbolInfoDB.account == sym.account
+            SymbolInfoDB.symbol == sym["symbol"],
+            SymbolInfoDB.account == sym["account"]
         ).first()
 
         if existing:
-            existing.contractsize = sym.contractsize
-            existing.stop_level = sym.stop_level
-            existing.digits = sym.digits
+            existing.contractsize = sym["contractsize"]
+            existing.stop_level = sym["stop_level"]
+            existing.digits = sym["digits"]
         else:
             new_sym = SymbolInfoDB( 
-                account = sym.account, #type:ignore
-                symbol = sym.symbol, #type:ignore
-                contractsize = sym.contractsize, #type:ignore
-                stop_level = sym.stop_level, #type:ignore
-                digits = sym.digits #type:ignore
+                account = sym["account"], #type:ignore
+                symbol = sym["symbol"], #type:ignore
+                contractsize = sym["contractsize"], #type:ignore
+                stop_level = sym["stop_level"], #type:ignore
+                digits = sym["digits"] #type:ignore
             )
             session.add(new_sym)
     try:

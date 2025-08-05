@@ -22,7 +22,7 @@ logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 
 # Credentials for Google Sheets API
 service_account_info = {
-    "service_account_file":"crenditals.json",
+    "service_account_file":"credentials.json",
     "scopes": ["https://www.googleapis.com/auth/spreadsheets"],
     "spreadsheet_id": "15glnxvLJAy7Z9rqXjq2IP3JzxbRN4xA8l2cvO68Ypcw",
     "sheet-name": "TickData"
@@ -128,36 +128,33 @@ async def TickData(data: Dict[str, Dict[str, TickInfo]],request:Request):
                         **tick.dict()
                     }
                 )
-                bid = tick.bid if tick.bid is not None else 0.0
-                ask = tick.ask if tick.ask is not None else 0.0
-                spread = tick.spread if tick.spread is not None else 0.0
-                swap_long = tick.swap_long if tick.swap_long is not None else 0.0
-                swap_short = tick.swap_short if tick.swap_short is not None else 0.0
-                date = tick.date if tick.date is not None else ""
-                if (acc,sym) in existing:
-                    print(f"Updating existing tick data for {acc} - {sym}")
-                    # update.append([acc, sym, bid, ask, spread, swap_long, swap_short, date])
+                # bid = tick.bid if tick.bid is not None else 0.0
+                # ask = tick.ask if tick.ask is not None else 0.0
+                # spread = tick.spread if tick.spread is not None else 0.0
+                # swap_long = tick.swap_long if tick.swap_long is not None else 0.0
+                # swap_short = tick.swap_short if tick.swap_short is not None else 0.0
+                # date = tick.date if tick.date is not None else ""
+                # if (acc,sym) in existing:
+                #     print(f"Updating existing tick data for {acc} - {sym}")
+                #     # update.append([acc, sym, bid, ask, spread, swap_long, swap_short, date])
                     
-                    service.spreadsheets().values().update(
-                            spreadsheetId=service_account_info["spreadsheet_id"],
-                            range=f"{service_account_info['sheet-name']}!A{existing[(acc,sym)]}:H{existing[(acc,sym)]}",
-                            valueInputOption="RAW",
-                            body={"values": [[acc, sym, bid, ask, spread, swap_long, swap_short, date]]}
-                        ).execute()
-                    print("Updated existing tick data for", acc, sym)
-                else:
-                    print(f"Appending new tick data for {acc} - {sym}")
-                    service.spreadsheets().values().append(
-                            spreadsheetId=service_account_info["spreadsheet_id"],
-                            range=f"{service_account_info['sheet-name']}!A2",
-                            valueInputOption="RAW",
-                            body={"values": [[acc, sym, bid, ask, spread, swap_long, swap_short, date]]}
-                        ).execute()
-                    print("Added tick data for", acc, sym)
-        #update all tick data in database
-
-       
-
+                #     service.spreadsheets().values().update(
+                #             spreadsheetId=service_account_info["spreadsheet_id"],
+                #             range=f"{service_account_info['sheet-name']}!A{existing[(acc,sym)]}:H{existing[(acc,sym)]}",
+                #             valueInputOption="RAW",
+                #             body={"values": [[acc, sym, bid, ask, spread, swap_long, swap_short, date]]}
+                #         ).execute()
+                #     print("Updated existing tick data for", acc, sym)
+                # else:
+                #     print(f"Appending new tick data for {acc} - {sym}")
+                #     service.spreadsheets().values().append(
+                #             spreadsheetId=service_account_info["spreadsheet_id"],
+                #             range=f"{service_account_info['sheet-name']}!A2",
+                #             valueInputOption="RAW",
+                #             body={"values": [[acc, sym, bid, ask, spread, swap_long, swap_short, date]]}
+                #         ).execute()
+                #     print("Added tick data for", acc, sym)
+    
 
         logging.info(f"{sum(len(ticks) for ticks in data.values())} ticks received successfully")
         return {"message": f"{sum(len(ticks) for ticks in data.values())} ticks received successfully"}
