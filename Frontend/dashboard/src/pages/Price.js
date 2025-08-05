@@ -4,6 +4,7 @@ import fetchPrice from "../api";
 
 function Dashboard() {
     const [priceData, setPriceData] = useState({});
+    const [prevPriceData, setPrevPriceData] = useState({});
 
     const getPrice = async () => {
         const data = await fetchPrice();
@@ -16,9 +17,26 @@ function Dashboard() {
         getPrice();
         const intervalId = setInterval(() => {
             getPrice();
-        }, 500);
+        }, 1000);
         return () => clearInterval(intervalId);
     }, []);
+
+    useEffect(() => {
+        if (Object.keys(priceData).length > 0) {
+            setPrevPriceData(prev => prev !== priceData ? priceData : prev);
+        }
+    }, [priceData]);
+
+
+    const getColorClass = (account, symbol, field, currentValue) => {
+        if (!prevPriceData[account] || !prevPriceData[account][symbol]) return '';
+        const prevValue = prevPriceData[account][symbol][field];
+        if (prevValue === undefined) return '';
+        if (currentValue > prevValue) return 'price-up';
+        if (currentValue < prevValue) return 'price-down';
+    };
+
+    
     return (
         <div className="price-page">
             <div className="stick-container">
@@ -26,39 +44,39 @@ function Dashboard() {
             </div>
             <div className="table-container">
                 {Object.keys(priceData).length > 0 ? (
-                    <table className="price-table">
-                        <thead>
-                            <tr>
-                                <th style={{ width: '50%' }}>Account</th>
-                                <th style={{ width: '50%' }}>Symbol</th>
-                                <th style={{ width: '50%' }}>Bid</th>
-                                <th style={{ width: '50%' }}>Ask</th>
-                                <th style={{ width: '50%' }}>Spread</th>
-                                <th style={{ width: '50%' }}>Swap long</th>
-                                <th style={{ width: '50%' }}>Swap short</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {/* flatten data by objec.entries to return the list of list */}
-                            {priceData &&
-                                Object.entries(priceData).flatMap(([account, symbols]) => (
-                                    // console.log(priceData)
-                                    Object.entries(symbols).map(([symbol, tick]) => (
-                                        <tr key={`${account}-${symbol}`}>
-                                            <td>{account}</td>
-                                            <td>{symbol}</td>
-                                            <td>{tick.bid}</td>
-                                            <td>{tick.ask}</td>
-                                            <td>{tick.spread}</td>
-                                            <td>{tick.swap_long}</td>
-                                            <td>{tick.swap_short}</td>
-                                        </tr>
-                                    ))
+                    Object.entries(priceData).map(([account, symbols]) => (
+                        <table className="price-table" key={account}>
+                            <thead>
+                                <tr className="account-header">
+                                    <th colSpan="6" style={{ textAlign: 'center' }} >{account}</th>
+                                </tr>
+                                <tr className="row-header">
+                                    <th>Symbol</th>
+                                    <th>Bid</th>
+                                    <th>Ask</th>
+                                    <th>Spread</th>
+                                    <th>Swap Long</th>
+                                    <th>Swap Short</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Object.entries(symbols).map(([symbol, tick]) => (
+                                    <tr key={`${account}-${symbol}`}>
+                                        <td>{symbol}</td>
+                                        <td className={getColorClass(account, symbol, 'bid', tick.bid)}>{tick.bid}</td>
+                                        <td className={getColorClass(account, symbol, 'ask', tick.ask)}>{tick.ask}</td>
+                                        <td>{tick.spread}</td>
+                                        <td>{tick.swap_long}</td>
+                                        <td>{tick.swap_short}</td>
+                                    </tr>
                                 ))}
-                        </tbody>
-                    </table>
-                ) : (<p>No data available</p>)}
+                            </tbody>
+                        </table>
+                    ))
+                ) : (
+                    <p>No data available</p>
+                )}
+
             </div>
 
         </div>

@@ -98,3 +98,16 @@ body,
     z-index: 100;
     background-color: white;
 }
+
+.price-up {
+    background-color: #d0f0ff;
+    color: blue;
+    transition: background-color 0.5s ease;
+}
+
+.price-down {
+    background-color: #ffd0d0;
+    color: red;
+    transition: background-color 0.5s ease;
+}
+
