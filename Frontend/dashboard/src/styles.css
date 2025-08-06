@@ -77,6 +77,8 @@ body,
 .table-container {
     max-height: 1000px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: row
 }
 
 .price-table {

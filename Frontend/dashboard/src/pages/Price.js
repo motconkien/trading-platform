@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import fetchPrice from "../api";
-
+import dumpData from "../components/dumpData";
 
 function Dashboard() {
     const [priceData, setPriceData] = useState({});
     const [prevPriceData, setPrevPriceData] = useState({});
+    
 
     const getPrice = async () => {
         const data = await fetchPrice();
