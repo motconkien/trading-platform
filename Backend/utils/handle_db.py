@@ -69,3 +69,6 @@ def update_all_symbol(symbol_data):
         logging.error(f"Error committing session: {e}")
     finally:
         session.close()
+
+def update_all_ohlc(ohlc_data):
+    pass

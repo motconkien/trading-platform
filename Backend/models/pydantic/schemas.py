@@ -23,3 +23,15 @@ class SymbolInfo(BaseModel):
 
 class SymbolResponse(BaseModel):
     message:str
+
+class OhlcInfo(BaseModel):
+    # account:str
+    # symbol:str
+    open:float
+    close:float
+    high:float
+    low:float
+    date:str
+
+class OhlcResponse(BaseModel):
+    message:str

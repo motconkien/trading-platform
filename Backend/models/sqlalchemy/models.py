@@ -23,3 +23,16 @@ class SymbolInfoDB(Base):
     contractsize = Column(Integer)
     stop_level = Column(Float)
     digits = Column(Integer)
+
+# for candle stick
+class OhlcDB(Base):
+    __tablename__ = "ohlc"
+    id = Column(Integer, primary_key=True, index=True)
+    account = Column(VARCHAR(255))
+    symbol = Column(VARCHAR(255))
+    open = Column(Float)
+    high = Column(Float)
+    low = Column(Float)
+    close = Column(Float)
+    date = Column(DATETIME)
+
