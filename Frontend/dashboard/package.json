@@ -10,6 +10,7 @@
     "axios": "^1.11.0",
     "hamburger-react": "^2.5.2",
     "instal": "^0.0.1-security",
+    "lightweight-charts": "^5.0.8",
     "npm": "^11.5.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -1,32 +1,35 @@
 import { useEffect, useState } from "react";
-import fetchPrice from "../api";
+import {fetchPrice, useFetchSocket} from "../api";
 import dumpData from "../components/dumpData";
 
 function Dashboard() {
     const [priceData, setPriceData] = useState({});
     const [prevPriceData, setPrevPriceData] = useState({});
-    
 
-    const getPrice = async () => {
-        const data = await fetchPrice();
-        setPriceData(data);
-        // console.log(data);
 
-    };
+    // const getPrice = async () => {
+    //     const data = await fetchPrice();
+    //     setPriceData(data);
+    //     // console.log(data);
+
+    // };
+    // useEffect(() => {
+
+    //     getPrice();
+    //     const intervalId = setInterval(() => {
+    //         getPrice();
+    //     }, 1000);
+    //     return () => clearInterval(intervalId);
+    // }, []);
+
+    const tickData = useFetchSocket("ws://localhost:8001/ws/tick");
+
     useEffect(() => {
-
-        getPrice();
-        const intervalId = setInterval(() => {
-            getPrice();
-        }, 1000);
-        return () => clearInterval(intervalId);
-    }, []);
-
-    useEffect(() => {
-        if (Object.keys(priceData).length > 0) {
-            setPrevPriceData(prev => prev !== priceData ? priceData : prev);
+        if (tickData && Object.keys(tickData).length > 0) {
+            setPriceData(tickData);
+            setPrevPriceData(prev => prev !== tickData ? tickData : prev);
         }
-    }, [priceData]);
+    }, [tickData]);
 
 
     const getColorClass = (account, symbol, field, currentValue) => {
@@ -37,7 +40,7 @@ function Dashboard() {
         if (currentValue < prevValue) return 'price-down';
     };
 
-    
+
     return (
         <div className="price-page">
             <div className="stick-container">
@@ -64,6 +67,8 @@ function Dashboard() {
                                 {Object.entries(symbols).map(([symbol, tick]) => (
                                     <tr key={`${account}-${symbol}`}>
                                         <td>{symbol}</td>
+                                        {/* <td>{tick.bid}</td>
+                                        <td>{tick.ask}</td> */}
                                         <td className={getColorClass(account, symbol, 'bid', tick.bid)}>{tick.bid}</td>
                                         <td className={getColorClass(account, symbol, 'ask', tick.ask)}>{tick.ask}</td>
                                         <td>{tick.spread}</td>
