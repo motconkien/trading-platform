@@ -7,8 +7,13 @@ import logging
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from utils.handle_db import update_all_tick
+from connections.socketcon import SocketConnection
+from fastapi import WebSocket, WebSocketDisconnect
+import json
+import asyncio
 
-    
+
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(message)s',
@@ -20,88 +25,48 @@ logging.basicConfig(
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 
 
-# Credentials for Google Sheets API
-service_account_info = {
-    "service_account_file":"credentials.json",
-    "scopes": ["https://www.googleapis.com/auth/spreadsheets"],
-    "spreadsheet_id": "15glnxvLJAy7Z9rqXjq2IP3JzxbRN4xA8l2cvO68Ypcw",
-    "sheet-name": "TickData"
-}
+# # Credentials for Google Sheets API
+# service_account_info = {
+#     "service_account_file":"credentials.json",
+#     "scopes": ["https://www.googleapis.com/auth/spreadsheets"],
+#     "spreadsheet_id": "15glnxvLJAy7Z9rqXjq2IP3JzxbRN4xA8l2cvO68Ypcw",
+#     "sheet-name": "TickData"
+# }
 
-cred = service_account.Credentials.from_service_account_file(
-    service_account_info["service_account_file"],
-    scopes=service_account_info["scopes"]
-)
+# cred = service_account.Credentials.from_service_account_file(
+#     service_account_info["service_account_file"],
+#     scopes=service_account_info["scopes"]
+# )
 
-#read before adding new data
-def read_data():
-    service = build("sheets", "v4", credentials=cred)
-    result = service.spreadsheets().values().get(
-        spreadsheetId=service_account_info["spreadsheet_id"],
-        range=f"{service_account_info['sheet-name']}!A:Z"
-    ).execute()
-    return result.get("values", [])
+# #read before adding new data
+# def read_data():
+#     service = build("sheets", "v4", credentials=cred)
+#     result = service.spreadsheets().values().get(
+#         spreadsheetId=service_account_info["spreadsheet_id"],
+#         range=f"{service_account_info['sheet-name']}!A:Z"
+#     ).execute()
+#     return result.get("values", [])
 
-def map_to_tick_info():
-    data = read_data()
-    existing = {}
-    for i, row in enumerate(data):
-        if len(row) > 2:
-            account,symbol = row[0], row[1]
-            existing[(account, symbol)] = i + 2
+# def map_to_tick_info():
+#     data = read_data()
+#     existing = {}
+#     for i, row in enumerate(data):
+#         if len(row) > 2:
+#             account,symbol = row[0], row[1]
+#             existing[(account, symbol)] = i + 2
 
-    return existing
-
-def split_data(existing, flattened_data):
-    updates = []
-    appends = []
-    for item in flattened_data:
-        key = (item["account"], item["symbol"])
-        row_values = [
-            item.get("account", ""),
-            item.get("symbol", ""),
-            item.get("bid", ""),
-            item.get("ask", ""),
-            item.get("spread", ""),
-            item.get("swap_long", ""),
-            item.get("swap_short", ""),
-            item.get("date", ""),
-        ]
-        if key in existing:
-            row_num = existing[key]
-            updates.append((row_num, row_values))  
-        else:
-            appends.append(row_values)
-    return updates, appends
+#     return existing
 
 
-#function to update Google Sheets with tick data
-def update_google_sheet(data, type: str):
-    service = build("sheets", "v4", credentials=cred)
-    
-    if type == "append":
-        service.spreadsheets().values().append(
-            spreadsheetId=service_account_info["spreadsheet_id"],
-            range=f"{service_account_info['sheet-name']}!A1",
-            valueInputOption="RAW",
-            body={"values": data}
-        ).execute()
-
-    elif type == "update":
-        for row_num, row_data in data:
-            service.spreadsheets().values().update(
-                spreadsheetId=service_account_info["spreadsheet_id"],
-                range=f"{service_account_info['sheet-name']}!A{row_num}:H{row_num}",
-                valueInputOption="RAW",
-                body={"values": [row_data]}
-            ).execute()
 
 
 
 #function to route
 router = APIRouter()
+manager = SocketConnection()
 
-tickdata: Dict[str,dict[str,TickInfo]] = {}
+tickdata: Dict[str, Dict[str, dict]] = {}
+
 # POST endpoint to receive tick data
 @router.post("/price", response_model=TickResponse)
 async def TickData(data: Dict[str, Dict[str, TickInfo]],request:Request):
@@ -109,15 +74,15 @@ async def TickData(data: Dict[str, Dict[str, TickInfo]],request:Request):
     # print("Raw data: ", data)
     flattened_data =[]
     
-    service = build("sheets", "v4", credentials=cred)
-    existing = map_to_tick_info()
+    # service = build("sheets", "v4", credentials=cred)
+    # existing = map_to_tick_info()
     try:
         for acc,ticks in data.items():
             if acc not in tickdata:
                 tickdata[acc] = {}
 
             for sym, tick_data in ticks.items():
-                tickdata[acc][sym] = tick_data
+                tickdata[acc][sym] = tick_data.dict()
             
             #flatten data for database 
             for sym, tick in ticks.items():
@@ -161,7 +126,30 @@ async def TickData(data: Dict[str, Dict[str, TickInfo]],request:Request):
     except Exception as e: 
         return JSONResponse(content={"error":str(e)}, status_code=400)
 
-# GET endpoint to return stored tick data
-@router.get("/price/data", response_model=Dict[str,Dict[str,TickInfo]])
-async def GetTick():
-    return tickdata
+# GET endpoint to return stored tick data (backup)
+# @router.get("/price/data", response_model=Dict[str,Dict[str,TickInfo]])
+# async def GetTick():
+#     return tickdata
+
+#socket connection to receive tick data
+@router.on_event("startup")
+async def start_broadcast():
+    async def broadcast_tick_data():
+        while True:
+            json_data = json.dumps(tickdata)
+            await manager.broadcast(json_data)
+            await asyncio.sleep(1)
+    asyncio.create_task(broadcast_tick_data())
+
+
+@router.websocket("/ws/tick")
+async def websocket_endpoint(websocket:WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logging.info("WebSocket disconnected")
+    except Exception as e:
+        logging.error(f"WebSocket error: {e}")

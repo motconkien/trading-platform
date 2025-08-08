@@ -1,7 +1,11 @@
 from sqlalchemy import Column, String, Float, Integer, VARCHAR, DATETIME
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import UniqueConstraint
+from database.databases import Base
 
-Base = declarative_base()
+
+# Base = declarative_base()
+
 
 class TickInfoDB(Base):
     __tablename__ = "tick"
@@ -14,6 +18,10 @@ class TickInfoDB(Base):
     swap_long = Column(Float)
     swap_short = Column(Float)
     date = Column(DATETIME)
+
+    __table_args__ = (
+        UniqueConstraint('symbol', 'date', name='uniq_account_symbol_date'),
+    )
 
 class SymbolInfoDB(Base):
     __tablename__ = "symbol"
@@ -35,4 +43,8 @@ class OhlcDB(Base):
     low = Column(Float)
     close = Column(Float)
     date = Column(DATETIME)
+
+    __table_args__ = (
+        UniqueConstraint('symbol','date', name='uniq_symbol_date'),
+    )
 

@@ -1,39 +1,39 @@
 import sys
 from database import databases
 from datetime import datetime
+from sqlalchemy import text
 import logging
-from models.sqlalchemy.models import TickInfoDB, SymbolInfoDB
+from models.sqlalchemy.models import TickInfoDB, SymbolInfoDB, OhlcDB
 
 sys.dont_write_bytecode=True
 def update_all_tick(tick_data):
     session = next(databases.get_db())
-    for tick in tick_data:
-        date = datetime.strptime(tick.date,"%Y.%m.%d %H:%M:%S")
+    values = [
+        {
+            "account": tick["account"],
+            "symbol": tick["symbol"],
+            "bid": tick["bid"],
+            "ask": tick["ask"],
+            "spread": tick["spread"],
+            "swap_long": tick["swap_long"],
+            "swap_short": tick["swap_short"],
+            "date": datetime.strptime(tick['date'], "%Y.%m.%d %H:%M:%S")
+        }
+        for tick in tick_data
+    ]
+    sql = """
+    INSERT INTO tick (account, symbol, bid, ask, spread, swap_long, swap_short, date)
+    VALUES (:account, :symbol, :bid, :ask, :spread, :swap_long, :swap_short, :date)
+    ON DUPLICATE KEY UPDATE
+        bid = VALUES(bid),
+        ask = VALUES(ask),
+        spread = VALUES(spread),
+        swap_long = VALUES(swap_long),
+        swap_short = VALUES(swap_short)
+    """
 
-
-        existing = session.query(TickInfoDB).filter( #type:ignore
-           TickInfoDB.symbol ==tick.symbol,
-            TickInfoDB.date == date
-        ).first()
-
-        #need to change to get instead of calling directly
-        if existing:
-            existing.bid = tick.bid
-            existing.ask = tick.ask
-            existing.spread = tick.spread
-        else:
-            new_tick = TickInfoDB( 
-                account = tick.account,  # type: ignore
-                symbol = tick.symbol,  # type: ignore
-                bid = tick.bid,  # type: ignore
-                ask = tick.ask,  # type: ignore
-                spread = tick.spread,  # type: ignore
-                swap_long = tick.swap_long,  # type: ignore
-                swap_short = tick.swap_short,  # type: ignore
-                date = date # type: ignore
-            )
-            session.add(new_tick)
     try:
+        session.execute(text(sql), values)
         session.commit()
     except Exception as e:
         session.rollback()
@@ -71,4 +71,33 @@ def update_all_symbol(symbol_data):
         session.close()
 
 def update_all_ohlc(ohlc_data):
-    pass
+    session = next(databases.get_db())
+    value = [{
+        "account": info['account'],
+        "symbol": info["symbol"],
+        "open": info["open"],
+        "high": info["high"],
+        "low": info["low"],
+        "close": info["close"],
+        "date": datetime.strptime(info["date"], "%Y.%m.%d %H:%M:%S")
+    } for info in ohlc_data]
+    
+    sql = """
+    INSERT INTO ohlc (account, symbol, open, high, low, close, date)
+    VALUES (:account, :symbol, :open, :high, :low, :close, :date)
+    ON DUPLICATE KEY UPDATE
+        open = VALUES(open),
+        high = VALUES(high),
+        low = VALUES(low),
+        close = VALUES(close)
+    """
+    
+    try:
+        session.execute(text(sql), value)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        logging.error(f"Error committing session: {e}")
+    finally:
+        session.close()
+

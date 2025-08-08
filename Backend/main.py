@@ -1,9 +1,5 @@
 from fastapi import FastAPI, Request
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
-from typing import Dict
-import models.sqlalchemy.models as models
-import utils.handle_db as handle_db
 import uvicorn
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -11,14 +7,18 @@ from fastapi import Request
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from routers import prices, symbols
+from routers import prices, symbols, ohlc
+from database.databases import engine, Base
 import shutil
 import os 
+from models.sqlalchemy.models import TickInfoDB, SymbolInfoDB, OhlcDB
+
 
 
 app = FastAPI()
 app.include_router(prices.router)
 app.include_router(symbols.router)
+app.include_router(ohlc.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,6 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+Base.metadata.create_all(bind=engine)
 def remove_pycache(start_dir="."):
     for root, dirs, files in os.walk(start_dir):
         for d in dirs:

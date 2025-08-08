@@ -8,7 +8,7 @@ url = "mysql+pymysql://root:huyen20897@127.0.0.1:3306/test"
 engine = create_engine(url, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
+# Base.metadata.create_all(bind=engine)
 #create session 
 def get_db():
     db = SessionLocal()

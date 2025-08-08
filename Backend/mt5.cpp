@@ -10,6 +10,8 @@
 //define url
 string price_url = "http://127.0.0.1:8001/price";
 string symbol_url = "http://127.0.0.1:8001/symbol";
+string ohlc_url = "http://127.0.0.1:8001/ohlc";
+string socket_test = "ws://127.0.0.1/ws/tick";
 
 void sendingBatchData(string url,string acc,string data){
    
@@ -124,7 +126,46 @@ void SymbolJson() {
    }
 }
 
+//+------------------------------------------------------------------+
+//| OHLCinfo                                                         |
+//+------------------------------------------------------------------+
+string MakeOHLCJson(string sym, double high, double low, double open, double close, string date) {
+   string json = StringFormat(
+            "\"%s\":{\"high\":%.5f, \"low\":%.5f, \"open\":%.5f, \"close\":%.5f, \"date\":\"%s\"}", 
+              sym, high, low, open, close, date);
+   return json;
+}
 
+void OHLCInfo() {
+   int batch_size = 100;
+   int total = SymbolsTotal(true);
+   string account =IntegerToString( AccountInfoInteger(ACCOUNT_LOGIN));
+   string jsonData = "{";
+   for (int i = 0; i < total; i++) {
+      string sym = SymbolName(i, true);
+      if(StringLen(sym) == 0) continue;
+      
+      double open = iOpen(sym,PERIOD_M1,0);
+      double high = iHigh(sym,PERIOD_M1,0);
+      double low = iLow(sym,PERIOD_M1,0);
+      double close = iClose(sym,PERIOD_M1,0);
+      string date = TimeToString(TimeCurrent(), TIME_DATE|TIME_MINUTES|TIME_SECONDS);
+      jsonData += MakeOHLCJson(sym,high,low,open,close,date);
+      
+      if((i+1)%batch_size != 0 && i != total -1){
+         jsonData += ",";
+      }
+      
+      if((i+1)%batch_size == 0 || i == total -1){
+         jsonData += "}";
+         sendingBatchData(ohlc_url,account,jsonData);
+         jsonData = "{";
+         Sleep(5);
+      }
+      
+   }
+   
+}
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -136,6 +177,7 @@ int OnInit()
    Print("Function is calling...");
    PriceDataJson();
    //SymbolJson();
+   OHLCInfo();
 //PositionData();
 
 //---
@@ -156,9 +198,10 @@ void OnDeinit(const int reason)
 void OnTick()
   {
 //---
-   Print("Function is calling...");
+Print("Function is calling...");
    PriceDataJson();
    //SymbolJson();
+   OHLCInfo();
 //TestStaticRequest();
 
   }
@@ -171,6 +214,7 @@ void OnTimer()
 Print("Function is calling...");
   PriceDataJson();
   //SymbolJson();
+  OHLCInfo();
 //PositionData();
 //TestStaticRequest();
   }

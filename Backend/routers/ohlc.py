@@ -4,8 +4,11 @@ from models.pydantic.schemas import OhlcInfo, OhlcResponse
 from utils.handle_db import update_all_ohlc
 from typing import Dict, List
 import logging
+from connections.socketcon import SocketConnection
+from fastapi import WebSocket, WebSocketDisconnect
+import json
+import asyncio
 
-router = APIRouter()
 
 #saample coming data
 """
@@ -22,7 +25,8 @@ router = APIRouter()
 }
 """
 router = APIRouter()
-ohlcdata: Dict[str, dict[str,OhlcInfo]] = {}
+manager = SocketConnection()
+ohlcdata: Dict[str, dict[str,dict]] = {}
 
 @router.post("/ohlc", response_model=OhlcResponse)
 async def OhlcData(data: Dict[str,dict[str,OhlcInfo]]):
@@ -35,17 +39,41 @@ async def OhlcData(data: Dict[str,dict[str,OhlcInfo]]):
             
             for symbol,info in symbols.items():
                 if symbol not in ohlcdata[account]:
-                    ohlcdata[account][symbol] = info
+                    ohlcdata[account][symbol] = info.dict()
                 flattened_data.append({
                     "account":account,
                     "symbol":symbol,
                     **info.dict()
                 })
+        # print(flattened_data)
+        # update_all_ohlc(flattened_data)
+        logging.info(f"Received {len(flattened_data)} OHLC data points")
+        return {"message":"Receive ohlc data successfully"}
                 
     except Exception as e:
         logging.error(f"Error processing OHLC data: {e}")
         return JSONResponse(status_code=500, content={"message": "Internal Server Error"})
 
-@router.get("ohlc/data", response_model=Dict[str,dict[str,List[OhlcInfo]]])
-async def GetOhlc():
-    return ohlcdata
+# @router.get("/ohlc/data", response_model=Dict[str,dict[str,OhlcInfo]])
+# async def GetOhlc():
+#     return ohlcdata
+
+@router.on_event("startup")
+async def start_broadcast2():
+    async def broadcast_ohlc_data():
+        while True:
+            json_data = json.dumps(ohlcdata)
+            await manager.broadcast(json_data)
+            await asyncio.sleep(1)
+    asyncio.create_task(broadcast_ohlc_data())
+@router.websocket("ws/ohlc")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logging.info("WebSocket disconnected")
+    except Exception as e:
+        logging.error(f"WebSocket error: {e}")
