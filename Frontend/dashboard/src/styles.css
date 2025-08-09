@@ -116,3 +116,8 @@ body,
 .chart-container {
   flex: 1;
 }
+
+.account-header {
+    background: #525fa9;
+    font-weight: bold;
+}

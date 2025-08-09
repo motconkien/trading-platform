@@ -1,26 +1,11 @@
 import { useEffect, useState } from "react";
-import {fetchPrice, useFetchSocket} from "../api";
-import dumpData from "../components/dumpData";
+import { fetchPrice, useFetchSocket } from "../api";
+import {currencyData, metalsSymbols} from "../components/dumpData";
 
 function Dashboard() {
     const [priceData, setPriceData] = useState({});
+    const [dislayData, setDisplayData] = useState({});
     const [prevPriceData, setPrevPriceData] = useState({});
-
-
-    // const getPrice = async () => {
-    //     const data = await fetchPrice();
-    //     setPriceData(data);
-    //     // console.log(data);
-
-    // };
-    // useEffect(() => {
-
-    //     getPrice();
-    //     const intervalId = setInterval(() => {
-    //         getPrice();
-    //     }, 1000);
-    //     return () => clearInterval(intervalId);
-    // }, []);
 
     const tickData = useFetchSocket("ws://localhost:8001/ws/tick");
 
@@ -28,8 +13,29 @@ function Dashboard() {
         if (tickData && Object.keys(tickData).length > 0) {
             setPriceData(tickData);
             setPrevPriceData(prev => prev !== tickData ? tickData : prev);
+
+            const arrange = {};
+            Object.entries(tickData).forEach(([account, symbols]) => {
+                const filteredSymbols = Object.entries(symbols).filter(([symbol]) =>
+                    parseInt(account) != 72317552 ? (currencyData.includes(symbol.slice(0, 6))) 
+                                                    :(metalsSymbols.includes(symbol.slice(0,6))));
+
+                filteredSymbols.sort((a, b) => parseInt(account) != 72317552 
+                    ? (currencyData.indexOf(a[0].slice(0, 6)) - currencyData.indexOf(b[0].slice(0, 6)))
+                    : (metalsSymbols.indexOf(a[0].slice(0, 6)) - metalsSymbols.indexOf(b[0].slice(0, 6)))
+                );
+                // console.log("filter: ", filteredSymbols);
+
+                arrange[account] = {};
+                filteredSymbols.forEach(([symbol, info]) => {
+                    arrange[account][symbol] = info;
+                })
+            })
+            setDisplayData(arrange);
+
         }
     }, [tickData]);
+
 
 
     const getColorClass = (account, symbol, field, currentValue) => {
@@ -47,12 +53,12 @@ function Dashboard() {
                 <h1>LPs Price</h1>
             </div>
             <div className="table-container">
-                {Object.keys(priceData).length > 0 ? (
-                    Object.entries(priceData).map(([account, symbols]) => (
+                {Object.keys(dislayData).length > 0 ? (
+                    Object.entries(dislayData).map(([account, symbols]) => (
                         <table className="price-table" key={account}>
                             <thead>
                                 <tr className="account-header">
-                                    <th colSpan="6" style={{ textAlign: 'center' }} >{account}</th>
+                                    <th colSpan="6" style={{ textAlign: 'center', background:'rgb(0, 36, 49)', color:'whitesmoke'}} >{account}</th>
                                 </tr>
                                 <tr className="row-header">
                                     <th>Symbol</th>
