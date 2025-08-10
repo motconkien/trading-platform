@@ -93,12 +93,12 @@ body,
     padding: 12px;
     border-bottom: 0.5px solid black;
 }
-
-.price-page th {
+thead {
     position: sticky;
-    top: 0;
-    z-index: 100;
-    background-color: white;
+    top:0; 
+    background-color: rgb(0, 36, 49);
+    color: rgb(255, 255, 255);
+    z-index: 1;
 }
 
 .price-up {
@@ -118,6 +118,10 @@ body,
 }
 
 .account-header {
-    background: #525fa9;
+    background: rgb(0, 36, 49);
     font-weight: bold;
+    font-size: 1.5em;
+    color: whitesmoke;
+    text-align: center;
+    padding: 10px;
 }

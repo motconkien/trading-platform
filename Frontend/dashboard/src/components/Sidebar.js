@@ -1,13 +1,14 @@
 import React, {useState} from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FaHome } from 'react-icons/fa';
+import { AiFillMoneyCollect } from "react-icons/ai";
 
 function Sidebar() {
     const location = useLocation();
 
     const menuItems = [
         { path: '/dashboard',  icon: <FaHome />, label: 'Dashboard'},
-        { path: '/price', icon: <FaHome />, label: 'Price'}
+        { path: '/price', icon: <AiFillMoneyCollect />, label: 'Price'}
         
     ];
 

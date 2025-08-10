@@ -58,7 +58,9 @@ function Dashboard() {
                         <table className="price-table" key={account}>
                             <thead>
                                 <tr className="account-header">
-                                    <th colSpan="6" style={{ textAlign: 'center', background:'rgb(0, 36, 49)', color:'whitesmoke'}} >{account}</th>
+                                    <th colSpan="6" >
+                                        {account}
+                                    </th>
                                 </tr>
                                 <tr className="row-header">
                                     <th>Symbol</th>
