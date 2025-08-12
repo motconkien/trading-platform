@@ -29,6 +29,17 @@ const fetchHistory = async (account, symbol) => {
     }
 }
 
+const fetchOhlc = async () => {
+    try {
+        const res = await API.get("ohlc/data");
+        console.log("OHLC data fetched: ", res.data);
+        return res.data;
+    } catch (err) {
+        console.error("Failed to fetch OHLC data: ", err);
+        return {};
+    }
+}
+
 function useFetchSocket(url) {
     const [data, setData] = useState(null);
     const socketRef = useRef(null);
@@ -40,6 +51,7 @@ function useFetchSocket(url) {
         };
 
         socketRef.current.onmessage = (event) => {
+            console.log("Socket message received:", event.data);
             const message = JSON.parse(event.data);
             setData(message);
         };
@@ -61,4 +73,4 @@ function useFetchSocket(url) {
 }
 
 export default fetchPrice;
-export {useFetchSocket, fetchHistory};
+export {useFetchSocket, fetchHistory, fetchOhlc, API};

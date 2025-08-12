@@ -8,6 +8,7 @@ function Dashboard() {
     const [prevPriceData, setPrevPriceData] = useState({});
 
     const tickData = useFetchSocket("ws://localhost:8001/ws/tick");
+    // console.log("tickdata: ", tickData);
 
     useEffect(() => {
         if (tickData && Object.keys(tickData).length > 0) {
