@@ -46,7 +46,7 @@ function Dashboard() {
 
         const intervalId = setInterval(() => {
             fetchOHLC();
-        }, 10000);
+        }, 100);
 
         return () => clearInterval(intervalId);
     }, [selectedAccount, selectedSymbol]);
