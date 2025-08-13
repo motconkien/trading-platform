@@ -1,101 +1,77 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createChart } from "lightweight-charts";
+import Chart from 'react-apexcharts';
+import ReactApexChart from "react-apexcharts";
 
-export default function CandlestickChart({ ohlcData, account, symbol, historyData }) {
-    const chartContainerRef = useRef();
-    const chartRef = useRef();
-    const candleSeriesRef = useRef();
 
+export default function CandlestickChart({ priceData, account, symbol, historyData }) {
+    const candleInterval = 60 * 1000; // 1 minute
+
+    // 1️⃣ Initialize with history data
+    const [candles, setCandles] = useState(() =>
+        historyData
+            .slice()
+            .reverse()
+            .map(item => ({
+                x: new Date(item.date).getTime(),
+                y: [
+                    parseFloat(item.open),
+                    parseFloat(item.high),
+                    parseFloat(item.low),
+                    parseFloat(item.close)
+                ]
+            }))
+    );
+
+    // 2️⃣ Process live ticks
     useEffect(() => {
-        if (!chartContainerRef.current) return;
+        if (!priceData[account] || !priceData[account][symbol]) return;
 
-        // Create chart once
-        chartRef.current = createChart(chartContainerRef.current, {
-            width: chartContainerRef.current.clientWidth,
-            height: chartContainerRef.current.clientHeight || 400,
-            layout: {
-                background: { color: "#253248" },
-                textColor: "rgba(255, 255, 255, 0.9)",
-            },
-            grid: {
-                vertLines: { color: "#2B2B43" },
-                horzLines: { color: "#2B2B43" },
-            },
-        });
+        const arrayLive = priceData?.[account]?.[symbol];
+        if (!arrayLive) return;
+        const newCandles = [...candles]; // copy so we can update
+        const ticks = Array.isArray(arrayLive) ? arrayLive : [arrayLive];
 
-        candleSeriesRef.current = chartRef.current.addCandlestickSeries({
-            upColor: "#4bffb5",
-            downColor: "#ff4976",
-            borderDownColor: "#ff4976",
-            borderUpColor: "#4bffb5",
-            wickDownColor: "#838ca1",
-            wickUpColor: "#838ca1",
-        });
+        ticks.forEach(tickRaw => {
+            const tick = {
+                bid: parseFloat(tickRaw.bid),
+                time: new Date(tickRaw.Date).getTime()
+            };
 
-        return () => {
-            chartRef.current.remove();
-            chartRef.current = null;
-            candleSeriesRef.current = null;
-        };
-    }, []); // run once on mount
+            const candleStart = Math.floor(tick.time / candleInterval) * candleInterval;
+            let lastCandle = newCandles[newCandles.length - 1];
 
-    useEffect(() => {
-        if (!ohlcData[account] || !ohlcData[account][symbol]) return;
-        if (!candleSeriesRef.current) return;
-
-        // Format historical data
-        const combinedData = [...historyData]
-            .map(item => {
-                if (!item.date) return null;
-                const dateStr = item.date.replace(/\./g, '-');
-                const time = Math.floor(new Date(dateStr).getTime() / 1000);
-                if (isNaN(time)) return null;
-                return {
-                    time,
-                    open: item.open,
-                    high: item.high,
-                    low: item.low,
-                    close: item.close,
-                };
-            })
-            .filter(Boolean)
-            .sort((a, b) => a.time - b.time);
-
-        candleSeriesRef.current.setData(combinedData);
-
-        // Format latest OHLC update
-        const candlesArray = ohlcData[account] && ohlcData[account][symbol] ? [ohlcData[account][symbol]] : [];
-        const updatedData = candlesArray
-            .map(item => {
-                if (!item.date) return null;
-                const dateStr = item.date.replace(/\./g, '-');
-                const time = Math.floor(new Date(dateStr).getTime() / 1000);
-                if (isNaN(time)) return null;
-                return {
-                    time,
-                    open: item.open,
-                    high: item.high,
-                    low: item.low,
-                    close: item.close,
-                };
-            })
-            .filter(Boolean);
-
-        if (updatedData.length > 0) {
-            const lastCandleTime = combinedData.length ? combinedData[combinedData.length - 1].time : 0;
-            if (updatedData[0].time >= lastCandleTime) {
-                candleSeriesRef.current.update(updatedData[0]);
+            if (!lastCandle || lastCandle.x !== candleStart) {
+                // New candle
+                newCandles.push({
+                    x: candleStart,
+                    y: [tick.bid, tick.bid, tick.bid, tick.bid]
+                });
             } else {
-                console.warn("Skipping update because updatedData time is older than last candle");
+                // Update existing candle
+                const [open, high, low, close] = lastCandle.y;
+                lastCandle.y = [
+                    open,
+                    Math.max(high, tick.bid),
+                    Math.min(low, tick.bid),
+                    tick.bid
+                ];
             }
-        }
-    }, [ohlcData, account, symbol, historyData]);
+        });
 
+        setCandles(newCandles);
+    }, [priceData, account, symbol]);
+
+    // 3️⃣ Chart config
+    const options = {
+        chart: { type: "candlestick", height: 350 },
+        xaxis: { type: "datetime" },
+        yaxis: { tooltip: { enabled: true } }
+    };
 
     return (
-        <div
-            ref={chartContainerRef}
-            style={{ width: "100%", height: "400px" }}
-        />
+        <div>
+            <ReactApexChart options={options} series={[{ data: candles }]} type="candlestick" height={350} />
+        </div>
     );
 }
