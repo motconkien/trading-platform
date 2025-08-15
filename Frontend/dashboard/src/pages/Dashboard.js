@@ -1,5 +1,4 @@
-import { AreaSeries, BarSeries, BaselineSeries, createChart, CrosshairMode } from 'lightweight-charts';
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { priceData } from '../components/priceData';
 import { volumeData } from '../components/volumeData';
 import MidPriceChart from '../components/candlestick';
@@ -8,23 +7,21 @@ import { fetchHistory, useFetchSocket, fetchOhlc, API } from '../api';
 
 function Dashboard() {
     const [historyData, setHistoryData] = useState([]);
-    // const ohlcdata = useFetchSocket("ws://localhost:8001/ws/ohlc");
-    const [priceData, setPriceData] = useState({});
-    const [newTick, setNewTick] = useState();
-
+    const [initialData, setInitialData] = useState([]); //for the first ininitial
+    const [newPoint, setNewPoints] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState("102117821");
     const [selectedSymbol, setSelectedSymbol] = useState("AUDJPYc");
+    const [priceData, setPriceData] = useState()
 
-    // change this after testing
+
 
     const tickData = useFetchSocket("ws://localhost:8001/ws/tick");
     // console.log("Tick: ", tickData);
 
-
     const fetchHistoryData = async (account, symbol) => {
         try {
-            const res = await API.get(`tick/history/${account}/${symbol}/100`);
-            console.log("History data fetched: ", res.data);
+            const res = await API.get(`tick/history/${account}/${symbol}/200`);
+            console.log("History data fetched: ", res.data.length);
             setHistoryData(res.data);
 
         } catch (error) {
@@ -32,26 +29,13 @@ function Dashboard() {
         }
     }
 
-    // const fetchOHLC = async () => {
-    //     try {
-    //         const res = await API.get('ohlc/data');
-    //         // console.log("ohlc data fetched: ", res.data);
-    //         setOhlcData(res.data);
-    //     } catch (error) {
-    //         console.error("Error fetching ohlc data:", error);
-    //         setError("Failed to fetch ohlc data");
-    //     }
-    // }
-
     useEffect(() => {
-        // fetchOHLC();  // runs after first render
-        fetchHistoryData(selectedAccount, selectedSymbol); // fetch initial history data
+        fetchHistoryData(selectedAccount, selectedSymbol);
+        // const intervalId = setInterval(() => {
+        //     fetchHistoryData(selectedAccount, selectedSymbol);
+        // }, 1000);
 
-        const intervalId = setInterval(() => {
-            fetchHistoryData(selectedAccount, selectedSymbol);
-        }, 1000);
-
-        return () => clearInterval(intervalId);
+        // return () => clearInterval(intervalId);
     }, [selectedAccount, selectedSymbol]);
 
     useEffect(() => {
@@ -64,11 +48,26 @@ function Dashboard() {
                 bid: item.bid,
                 ask: item.ask
             }));
-        setPriceData(hisData);
+        setInitialData(hisData);
     }, [historyData])
 
+    // find new point
+    useEffect(() => {
+        if (tickData && Object.keys(tickData).length > 0) {
+            setPriceData(tickData);
+            const info = tickData[selectedAccount][selectedSymbol];
+            const formattedTick = {
+                time: info.date.replace(/\./g, '-'),
+                bid: info.bid,
+                ask: info.ask
+            };
+            //console.log("Test: ", formattedTick);
+            setNewPoints(formattedTick);
 
+        }
+    }, [tickData, selectedAccount, selectedSymbol]);
 
+    //console.log("New Tick.  ", newPoint);
     return (
         <div style={{ padding: "20px", minHeight: "100vh" }}>
             <h2>Trading Dashboard</h2>
@@ -100,8 +99,10 @@ function Dashboard() {
 
             { }
 
-            <div>
-                <MidPriceChart tickData={historyData}/>
+            <div className='chart-container'>
+                <div id='chart'>
+                    <MidPriceChart tickData={initialData} newPoint={newPoint} />
+                </div>
             </div>
 
         </div>
