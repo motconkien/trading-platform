@@ -101,3 +101,86 @@ def update_all_ohlc(ohlc_data):
     finally:
         session.close()
 
+def query_ohlc_history(account: str, symbol: str, limit: int = 100):
+    session = next(databases.get_db())
+    sql ="""
+
+    SELECT account,symbol, open, high, low, close, date FROM ohlc where account = :account and symbol = :symbol
+    ORDER BY date DESC LIMIT :limit
+    """
+    try:
+        result = session.execute(text(sql), {"account":account, "symbol": symbol, "limit":limit})
+        rows = result.fetchall()
+        print("Fetched rows:", rows) 
+        ohlc_history = [
+            {"open":row[2],
+            "high":row[3],
+            "low":row[4],
+            "close":row[5],
+            "date":row[6].strftime("%Y-%m-%d %H:%M:%S")} 
+            for row in rows]
+        
+        return ohlc_history
+    except Exception as e:
+        print(f"Error querying OHLC history: {e}")
+        return []
+    finally:
+        session.close()
+    
+def query_tick_history(account: str, symbol:str, limit: int = 100):
+    session = next(databases.get_db())
+    sql = """
+
+    SELECT bid,ask,spread,swap_long,swap_short,date from tick where account = :account and symbol = :symbol
+    Order by date DESC limit :limit
+    """
+
+    try: 
+        result = session.execute(text(sql), {"account":account, "symbol":symbol, "limit":limit})
+        rows = result.fetchall()
+        # print(rows)
+        tick_history = [
+            {
+                "bid":row[0],
+                "ask":row[1],
+                "spread":row[2],
+                "swap_long":row[3],
+                "swap_short":row[4],
+                "date":row[5].strftime("%Y-%m-%d %H:%M:%S")
+            } for row in rows
+        ]
+        return tick_history
+    except Exception as e:
+        print(f"Error query tick history: {e}")
+        return []
+    finally:
+        session.close()
+
+def query_swap_history(account: str, symbol:str, limit: int = 100):
+    session = next(databases.get_db())
+    sql = """
+        SELECT account, symbol, max(swap_long) as swap_long, max(swap_short) as swap_short, DATE(date) as day 
+        FROM tick
+        WHERE account = :account and symbol = :symbol
+        GROUP BY day
+        ORDER BY day DESC limit :limit
+        """
+    
+    try: 
+        result = session.execute(text(sql), {'account': account, "symbol": symbol, "limit": limit})
+        rows = result.fetchall()
+
+        print(rows)
+        swap_history = [
+            {
+                "swap_long": row[2],
+                "swap_short": row[3],
+                "date": row[4].strftime("%Y-%m-%d")
+            } for row in rows
+        ]
+        return swap_history
+    except Exception as e: 
+        print(f"Error query swap history: {e}")
+        return []
+    finally:
+        session.close()

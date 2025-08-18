@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from models.pydantic.schemas import OhlcInfo, OhlcResponse
-from utils.handle_db import update_all_ohlc
+from utils.handle_db import update_all_ohlc, query_ohlc_history
 from typing import Dict, List
 import logging
 from connections.socketcon import SocketConnection
@@ -46,7 +46,7 @@ async def OhlcData(data: Dict[str,dict[str,OhlcInfo]]):
                     **info.dict()
                 })
         # print(flattened_data)
-        # update_all_ohlc(flattened_data)
+        update_all_ohlc(flattened_data)
         logging.info(f"Received {len(flattened_data)} OHLC data points")
         return {"message":"Receive ohlc data successfully"}
                 
@@ -54,26 +54,38 @@ async def OhlcData(data: Dict[str,dict[str,OhlcInfo]]):
         logging.error(f"Error processing OHLC data: {e}")
         return JSONResponse(status_code=500, content={"message": "Internal Server Error"})
 
-# @router.get("/ohlc/data", response_model=Dict[str,dict[str,OhlcInfo]])
-# async def GetOhlc():
-#     return ohlcdata
+@router.get("/ohlc/data", response_model=Dict[str,dict[str,OhlcInfo]])
+async def GetOhlc():
+    return ohlcdata
 
-@router.on_event("startup")
-async def start_broadcast2():
-    async def broadcast_ohlc_data():
-        while True:
-            json_data = json.dumps(ohlcdata)
-            await manager.broadcast(json_data)
-            await asyncio.sleep(1)
-    asyncio.create_task(broadcast_ohlc_data())
-@router.websocket("ws/ohlc")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-        logging.info("WebSocket disconnected")
-    except Exception as e:
-        logging.error(f"WebSocket error: {e}")
+# query data from db to show chart on frontend
+@router.get('/ohlc/history/{account}/{symbol}/{limit}', response_model=list[OhlcInfo])
+async def get_ohlc_history(account:str, symbol:str, limit:int =100):
+    return query_ohlc_history(account,symbol,limit)
+
+#receive the send to all ws endpoints
+# @router.on_event("startup")
+# async def start_broadcast2():
+#     async def broadcast_ohlc_data():
+#         previous_data = None
+#         while True:
+#             print("Broadcasting OHLC data:", ohlcdata)
+#             json_data = json.dumps(ohlcdata)
+#             if json_data != previous_data:
+#                 await manager.broadcast(json_data)
+#                 previous_data = json_data
+#             await asyncio.sleep(1)
+#     asyncio.create_task(broadcast_ohlc_data())
+
+# @router.websocket("/ws/ohlc")
+# async def websocket_endpoint(websocket: WebSocket):
+#     await manager.connect(websocket)
+#     try:
+#         while True:
+#             # await websocket.receive_text()
+#             await asyncio.sleep(1)
+#     except WebSocketDisconnect:
+#         manager.disconnect(websocket)
+#         logging.info("WebSocket disconnected")
+#     except Exception as e:
+#         logging.error(f"WebSocket error: {e}")

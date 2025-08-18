@@ -6,7 +6,7 @@ from typing import List, Dict
 import logging
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from utils.handle_db import update_all_tick
+from utils.handle_db import update_all_tick, query_tick_history, query_swap_history
 from connections.socketcon import SocketConnection
 from fastapi import WebSocket, WebSocketDisconnect
 import json
@@ -120,7 +120,7 @@ async def TickData(data: Dict[str, Dict[str, TickInfo]],request:Request):
                 #         ).execute()
                 #     print("Added tick data for", acc, sym)
     
-
+        update_all_tick(flattened_data)
         logging.info(f"{sum(len(ticks) for ticks in data.values())} ticks received successfully")
         return {"message": f"{sum(len(ticks) for ticks in data.values())} ticks received successfully"}
     except Exception as e: 
@@ -147,9 +147,24 @@ async def websocket_endpoint(websocket:WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            await websocket.receive_text()
+            try: 
+                #wait for client 
+                msg = await asyncio.wait_for(websocket.receive_text(), timeout=30)
+                logging.info(f"Received: {msg}")
+            except asyncio.TimeoutError:
+                #pong to frontend 
+                await websocket.send_text("pong")
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         logging.info("WebSocket disconnected")
     except Exception as e:
         logging.error(f"WebSocket error: {e}")
+
+#history 
+@router.get('/tick/history/{account}/{symbol}/{limit}', response_model=List[TickInfo])
+async def get_tick_history(account:str, symbol:str, limit:int=100):
+    return query_tick_history(account,symbol,limit)
+
+@router.get('/swap/history/{account}/{symbol}/{limit}')
+async def get_swap_history(account:str, symbol:str, limit:int=100):
+    return query_swap_history(account,symbol, limit)
