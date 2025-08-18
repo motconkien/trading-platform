@@ -75,37 +75,37 @@ function Dashboard() {
 
     // find new point
     useEffect(() => {
-        // if (tickData&& Object.keys(tickData).length > 0) {
-        //     setPriceData(tickData);
-        //     const info = tickData[selectedAccount][selectedSymbol];
-        //     const formattedTick = {
-        //         time: info.date.replace(/\./g, '-'),
-        //         bid: info.bid,
-        //         ask: info.ask
-        //     };
-        //     //console.log("Test: ", formattedTick);
-        //     setNewPoints(formattedTick);
+        if (tickData&& Object.keys(tickData).length > 0) {
+            setPriceData(tickData);
+            const info = tickData[selectedAccount][selectedSymbol];
+            const formattedTick = {
+                time: info.date.replace(/\./g, '-'),
+                bid: info.bid,
+                ask: info.ask
+            };
+            //console.log("Test: ", formattedTick);
+            setNewPoints(formattedTick);
 
-        // }
+        }
 
         // for test
-        let intervalId;
+        // let intervalId;
 
-        intervalId = setInterval(() => {
-            const now = new Date();
-            const formattedTime = now.toISOString().replace("T", " ").split(".")[0];
+        // intervalId = setInterval(() => {
+        //     const now = new Date();
+        //     const formattedTime = now.toISOString().replace("T", " ").split(".")[0];
 
-            const fakeTick = {
-                time: formattedTime,
-                bid: (95 + Math.random()).toFixed(3), // around 95.x
-                ask: (95.2 + Math.random()).toFixed(3) // around 95.2x
-            };
+        //     const fakeTick = {
+        //         time: formattedTime,
+        //         bid: (95 + Math.random()).toFixed(3), // around 95.x
+        //         ask: (95.2 + Math.random()).toFixed(3) // around 95.2x
+        //     };
 
-            console.log("Fake Tick:", fakeTick);
-            setNewPoints(fakeTick);
-        }, 1000); // every 2 seconds
+        //     console.log("Fake Tick:", fakeTick);
+        //     setNewPoints(fakeTick);
+        // }, 1000); // every 2 seconds
 
-        return () => clearInterval(intervalId);
+        // return () => clearInterval(intervalId);
 
     }, [tickData, selectedAccount, selectedSymbol]);
 
@@ -172,7 +172,7 @@ function Dashboard() {
 
             <div className='chart-container'>
                 <div id='chart-swap'>
-                    <SwapChart swapData={fakeSwap} />
+                    <SwapChart swapData={swapData} />
                 </div>
             </div>
 

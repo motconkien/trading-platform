@@ -58,7 +58,7 @@ export default function MidPriceChart({ tickData, newPoint }) {
     yaxis: { opposite: true },
     tooltip: { x: { format: "dd MMM yyyy HH:mm:ss" } },
     stroke: { curve: "smooth", width: 4 },
-    colors: ["#00BFFF"],
+    colors: ["#0ea1d2ff"],
     title: { text: "Price Trending", align: "center", style: { fontSize: "20px" } },
   };
 

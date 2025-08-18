@@ -44,28 +44,46 @@ function useFetchSocket(url) {
     const [data, setData] = useState(null);
     const socketRef = useRef(null);
     useEffect(() => {
-        socketRef.current = new WebSocket(url);
+        let reconnect;
+        let pingInterval;
+        const connect = () => {
+            socketRef.current = new WebSocket(url);
 
-        socketRef.current.onopen = () => {
-            console.log("WebSocket connected");
-        };
+            socketRef.current.onopen = () => {
+                console.log("WebSocket connected");
 
-        socketRef.current.onmessage = (event) => {
-            console.log("Socket message received:", event.data);
-            const message = JSON.parse(event.data);
-            setData(message);
-        };
+                //send heartbeat every 20s 
+                pingInterval = setInterval(() => {
+                    if (socketRef.current?.readyState === WebSocket.OPEN) {
+                        socketRef.current.send('ping');
+                    }
+                }, 20000)
+            };
 
-        socketRef.current.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
+            socketRef.current.onmessage = (event) => {
+                console.log("Socket message received:", event.data);
+                if (event.data === "pong") return;
+                const message = JSON.parse(event.data);
+                setData(message);
+            };
 
-        socketRef.current.onclose = () => {
-            console.log(`WebSocket disconnected from ${url}`);
-        };
+            socketRef.current.onerror = (error) => {
+                console.error("WebSocket error:", error);
+            };
+
+            socketRef.current.onclose = () => {
+                console.log(`WebSocket disconnected from ${url}`);
+                clearInterval(pingInterval)
+                reconnect = setTimeout(connect, 2000);
+            };
+        }
+
+        connect();
+
 
         return () => {
-            socketRef.current.close();
+            clearInterval(pingInterval);
+            socketRef.current?.close();
         };
     }, [url]);
 
@@ -73,4 +91,4 @@ function useFetchSocket(url) {
 }
 
 export default fetchPrice;
-export {useFetchSocket, fetchHistory, fetchOhlc, API};
+export { useFetchSocket, fetchHistory, fetchOhlc, API };
