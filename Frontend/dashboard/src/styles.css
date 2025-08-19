@@ -74,6 +74,21 @@ body,
     max-width: 100%;
 }
 
+.stick-container {
+    display: flex;
+    flex-direction: column;
+    /* align-items: flex-start; */
+    gap: 8px;
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between; /* H1 left, button right */
+  align-items: center;
+}
+
 .table-container {
     max-height: 1000px;
     overflow-y: auto;
@@ -88,14 +103,16 @@ body,
     resize: both;
 }
 
-.price-table td , .price-table th{
+.price-table td,
+.price-table th {
     text-align: center;
     padding: 12px;
     border-bottom: 0.5px solid black;
 }
+
 thead {
     position: sticky;
-    top:0; 
+    top: 0;
     background-color: rgb(0, 36, 49);
     color: rgb(255, 255, 255);
     z-index: 1;
@@ -114,7 +131,7 @@ thead {
 }
 
 .chart-container {
-  flex: 1;
+    flex: 1;
 }
 
 .account-header {
@@ -128,5 +145,46 @@ thead {
 
 .chart-container {
     padding: 10px;
-    
+
+}
+
+.dropdown {
+    width: 100%;
+}
+
+.dropdown-toggle {
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: none;
+  background-color: #02416c;
+  color: white;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
+  gap: 8px 12px; 
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  padding: 12px;
+  max-height: 240px; /* scrollable if too many symbols */
+  overflow-y: auto;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px; /* space below button */
+}
+
+.dropdown-item {
+  display: flex; /* align nicely inside grid */
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dropdown-item input {
+  margin-right: 4px;
+  vertical-align: middle;
 }

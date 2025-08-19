@@ -6,6 +6,9 @@ function Dashboard() {
     const [priceData, setPriceData] = useState({});
     const [dislayData, setDisplayData] = useState({});
     const [prevPriceData, setPrevPriceData] = useState({});
+    const [selectedSymbols, setSelectedSymbols] = useState([]);
+    const [open, setOpen] = useState(false);
+
 
     const tickData = useFetchSocket("ws://localhost:8001/ws/tick");
     console.log("tickdata: ", tickData);
@@ -19,11 +22,11 @@ function Dashboard() {
             Object.entries(tickData).forEach(([account, symbols]) => {
                 const filteredSymbols = Object.entries(symbols).filter(([symbol]) =>
                     parseInt(account) != 72317552 ? (currencyData.includes(symbol))
-                        : (metalsSymbols.includes(symbol.slice(0, 6))));
+                        : (currencyData.includes(symbol.slice(0, 6))));
 
                 filteredSymbols.sort((a, b) => parseInt(account) != 72317552
                     ? (currencyData.indexOf(a[0]) - currencyData.indexOf(b[0]))
-                    : (metalsSymbols.indexOf(a[0].slice(0, 6)) - metalsSymbols.indexOf(b[0].slice(0, 6)))
+                    : (currencyData.indexOf(a[0].slice(0, 6)) - currencyData.indexOf(b[0].slice(0, 6)))
                 );
                 // console.log("filter: ", filteredSymbols);
 
@@ -37,6 +40,13 @@ function Dashboard() {
         }
     }, [tickData]);
 
+    const selectedSymbol = selectedSymbols.length > 0 ? selectedSymbols : currencyData;
+
+    const toggleSymbol = (sym) => {
+        setSelectedSymbols((prev) =>
+            prev.includes(sym) ? prev.filter((s) => s !== sym) : [...prev, sym]
+        );
+    };
 
 
     const getColorClass = (account, symbol, field, currentValue) => {
@@ -51,7 +61,32 @@ function Dashboard() {
     return (
         <div className="price-page">
             <div className="stick-container">
-                <h1>LPs Price</h1>
+                <div className="header">
+                    <h1>LPs Price</h1>
+                </div>
+                <div className="dropwdown">
+                    <button onClick={() => setOpen(!open)} className="dropdown-toggle">
+                        {selectedSymbols.length > 0
+                            ? `Chosen (${selectedSymbols.length})`
+                            : "All Symbols"}
+                    </button>
+
+                    {open && (
+                        <div className="dropdown-menu">
+                            {currencyData.map((sym) => (
+                                <label key={sym} className="dropdown-item">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedSymbols.includes(sym)}
+                                        onChange={() => toggleSymbol(sym)}
+                                    />
+                                    {sym}
+                                </label>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
             </div>
             <div className="table-container">
                 {Object.keys(dislayData).length > 0 ? (
@@ -71,8 +106,8 @@ function Dashboard() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {currencyData.map((sym) => {
-                                    const tick = symbols[sym]; 
+                                {selectedSymbol.map((sym) => {
+                                    const tick = symbols[sym];
                                     return (
                                         <tr key={`${account}-${sym}`}>
                                             <td>{sym}</td>
