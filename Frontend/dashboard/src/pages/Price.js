@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchPrice, useFetchSocket } from "../api";
-import {currencyData, metalsSymbols} from "../components/dumpData";
+import { currencyData, metalsSymbols } from "../components/dumpData";
 
 function Dashboard() {
     const [priceData, setPriceData] = useState({});
@@ -18,11 +18,11 @@ function Dashboard() {
             const arrange = {};
             Object.entries(tickData).forEach(([account, symbols]) => {
                 const filteredSymbols = Object.entries(symbols).filter(([symbol]) =>
-                    parseInt(account) != 72317552 ? (currencyData.includes(symbol.slice(0, 6))) 
-                                                    :(metalsSymbols.includes(symbol.slice(0,6))));
+                    parseInt(account) != 72317552 ? (currencyData.includes(symbol))
+                        : (metalsSymbols.includes(symbol.slice(0, 6))));
 
-                filteredSymbols.sort((a, b) => parseInt(account) != 72317552 
-                    ? (currencyData.indexOf(a[0].slice(0, 6)) - currencyData.indexOf(b[0].slice(0, 6)))
+                filteredSymbols.sort((a, b) => parseInt(account) != 72317552
+                    ? (currencyData.indexOf(a[0]) - currencyData.indexOf(b[0]))
                     : (metalsSymbols.indexOf(a[0].slice(0, 6)) - metalsSymbols.indexOf(b[0].slice(0, 6)))
                 );
                 // console.log("filter: ", filteredSymbols);
@@ -59,12 +59,10 @@ function Dashboard() {
                         <table className="price-table" key={account}>
                             <thead>
                                 <tr className="account-header">
-                                    <th colSpan="6" >
-                                        {account}
-                                    </th>
+                                    <th rowSpan="2">Symbol</th>
+                                    <th colSpan="5">{account}</th>
                                 </tr>
                                 <tr className="row-header">
-                                    <th>Symbol</th>
                                     <th>Bid</th>
                                     <th>Ask</th>
                                     <th>Spread</th>
@@ -73,18 +71,31 @@ function Dashboard() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {Object.entries(symbols).map(([symbol, tick]) => (
-                                    <tr key={`${account}-${symbol}`}>
-                                        <td>{symbol}</td>
-                                        {/* <td>{tick.bid}</td>
-                                        <td>{tick.ask}</td> */}
-                                        <td className={getColorClass(account, symbol, 'bid', tick.bid)}>{tick.bid}</td>
-                                        <td className={getColorClass(account, symbol, 'ask', tick.ask)}>{tick.ask}</td>
-                                        <td>{tick.spread}</td>
-                                        <td>{tick.swap_long}</td>
-                                        <td>{tick.swap_short}</td>
-                                    </tr>
-                                ))}
+                                {currencyData.map((sym) => {
+                                    const tick = symbols[sym]; 
+                                    return (
+                                        <tr key={`${account}-${sym}`}>
+                                            <td>{sym}</td>
+                                            {tick ? (
+                                                <>
+                                                    <td className={getColorClass(account, sym, "bid", tick.bid)}>
+                                                        {tick.bid}
+                                                    </td>
+                                                    <td className={getColorClass(account, sym, "ask", tick.ask)}>
+                                                        {tick.ask}
+                                                    </td>
+                                                    <td>{tick.spread}</td>
+                                                    <td>{tick.swap_long}</td>
+                                                    <td>{tick.swap_short}</td>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <td colSpan="5" className="no-data">-</td>
+                                                </>
+                                            )}
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     ))
