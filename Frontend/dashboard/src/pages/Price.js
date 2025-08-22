@@ -90,55 +90,53 @@ function Dashboard() {
             </div>
             <div className="table-container">
                 {Object.keys(dislayData).length > 0 ? (
-                    Object.entries(dislayData).map(([account, symbols]) => (
-                        <table className="price-table" key={account}>
-                            <thead>
-                                <tr className="account-header">
-                                    <th rowSpan="2">Symbol</th>
-                                    <th colSpan="5">{account}</th>
+                    <table className="price-table">
+                        <thead>
+                            <tr className="account-header">
+                                <th rowSpan="2">Symbol</th>
+                                {Object.keys(dislayData).map((account) => (
+                                    <th key={account} colSpan="5">{account}</th>
+                                ))}
+                            </tr>
+                            <tr className="row-header">
+                                {Object.keys(dislayData).map((account) => (
+                                    <>
+                                        <th key={`${account}-bid`}>Bid</th>
+                                        <th key={`${account}-ask`}>Ask</th>
+                                        <th key={`${account}-spread`}>Spread</th>
+                                        <th key={`${account}-swap-long`}>Swap Long</th>
+                                        <th key={`${account}-swap-short`}>Swap Short</th>
+                                    </>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {selectedSymbol.map((sym) => (
+                                <tr key={sym}>
+                                    <td>{sym}</td>
+                                    {Object.entries(dislayData).map(([account, symbols]) => {
+                                        const tick = symbols[sym];
+                                        return tick ? (
+                                            <>
+                                                <td className={getColorClass(account, sym, "bid", tick.bid)}>{tick.bid}</td>
+                                                <td className={getColorClass(account, sym, "ask", tick.ask)}>{tick.ask}</td>
+                                                <td>{tick.spread}</td>
+                                                <td>{tick.swap_long}</td>
+                                                <td>{tick.swap_short}</td>
+                                            </>
+                                        ) : (
+                                            <td key={`${account}-${sym}`} colSpan="5" className="no-data">-</td>
+                                        );
+                                    })}
                                 </tr>
-                                <tr className="row-header">
-                                    <th>Bid</th>
-                                    <th>Ask</th>
-                                    <th>Spread</th>
-                                    <th>Swap Long</th>
-                                    <th>Swap Short</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {selectedSymbol.map((sym) => {
-                                    const tick = symbols[sym];
-                                    return (
-                                        <tr key={`${account}-${sym}`}>
-                                            <td>{sym}</td>
-                                            {tick ? (
-                                                <>
-                                                    <td className={getColorClass(account, sym, "bid", tick.bid)}>
-                                                        {tick.bid}
-                                                    </td>
-                                                    <td className={getColorClass(account, sym, "ask", tick.ask)}>
-                                                        {tick.ask}
-                                                    </td>
-                                                    <td>{tick.spread}</td>
-                                                    <td>{tick.swap_long}</td>
-                                                    <td>{tick.swap_short}</td>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <td colSpan="5" className="no-data">-</td>
-                                                </>
-                                            )}
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    ))
+                            ))}
+                        </tbody>
+                    </table>
                 ) : (
                     <p>No data available</p>
                 )}
-
             </div>
+
 
         </div>
     )
