@@ -1,6 +1,6 @@
-from sqlalchemy import Column, String, Float, Integer, VARCHAR, DATETIME
+from sqlalchemy import Column, String, Float, Integer, VARCHAR, DATETIME, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, Index
 from database.databases import Base
 
 
@@ -9,7 +9,7 @@ from database.databases import Base
 
 class TickInfoDB(Base):
     __tablename__ = "tick"
-    id = Column(Integer, primary_key=True, index=True)
+    # id = Column(Integer, primary_key=True)
     account = Column(VARCHAR(255))
     symbol = Column(VARCHAR(255))
     bid = Column(Float)
@@ -17,10 +17,11 @@ class TickInfoDB(Base):
     spread = Column(Integer)
     swap_long = Column(Float)
     swap_short = Column(Float)
-    date = Column(DATETIME)
+    date = Column(TIMESTAMP)
 
     __table_args__ = (
         UniqueConstraint('symbol', 'date', name='uniq_account_symbol_date'),
+        Index('idx_symbol_date', 'symbol', 'date'),
     )
 
 class SymbolInfoDB(Base):
@@ -42,7 +43,7 @@ class OhlcDB(Base):
     high = Column(Float)
     low = Column(Float)
     close = Column(Float)
-    date = Column(DATETIME)
+    date = Column(TIMESTAMP)
 
     __table_args__ = (
         UniqueConstraint('symbol','date', name='uniq_symbol_date'),
